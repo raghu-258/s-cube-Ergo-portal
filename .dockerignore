@@ -1,0 +1,10 @@
+**/node_modules
+web/dist
+server/.data
+**/.env
+apps-script
+app.js
+index.html
+styles.css
+*.md
+.git

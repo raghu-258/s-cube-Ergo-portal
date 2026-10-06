@@ -1,0 +1,17 @@
+{
+  "name": "scube-portal",
+  "private": true,
+  "description": "Scube employee learning portal: React front end, Node.js API, PostgreSQL, Google Cloud Storage",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c cyan,magenta \"npm run dev -w server\" \"npm run dev -w web\"",
+    "build": "npm run build -w web",
+    "start": "npm start -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

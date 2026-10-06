@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://REPLACE-WITH-YOUR-CLOUD-RUN-URL"],
+    "method": ["GET", "HEAD", "PUT"],
+    "responseHeader": ["Content-Type", "Content-Range", "Range", "Accept-Ranges"],
+    "maxAgeSeconds": 3600
+  }
+]
