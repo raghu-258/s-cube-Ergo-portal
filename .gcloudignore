@@ -1,0 +1,11 @@
+# Files NOT uploaded to Google Cloud Build by `gcloud run deploy --source .`
+.gcloudignore
+.git
+.gitignore
+.vscode
+#!include:.gitignore
+# Not part of the portal build
+apps-script/
+app.js
+index.html
+styles.css
