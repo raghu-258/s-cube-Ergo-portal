@@ -6,7 +6,8 @@ import { HttpError } from './util.js';
 // Birthday and work-anniversary emails to ALL_EMPLOYEES_EMAIL (team@), plus the dashboard feed.
 // Dates are plain calendar days in the office time zone (TIMEZONE), held as UTC-midnight Date objects.
 
-const FEED_DAYS = 45;
+// A full year, so the dashboard always has the next celebrations to show (it picks what to display).
+const FEED_DAYS = 366;
 const ymd = (y, m, d) => new Date(Date.UTC(y, m - 1, d));
 const isoDay = (day) => day.toISOString().slice(0, 10);
 

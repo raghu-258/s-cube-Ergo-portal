@@ -29,7 +29,10 @@ export function Overview() {
           <h1>{greeting()}, {firstName(me.name)}<span className="accent-dot">.</span></h1>
           <p className="heading-copy">Here is how {n} {n === 1 ? 'employee is' : 'employees are'} getting on with the AI course library. Updates every minute.</p>
         </div>
-        <button className="primary-button" onClick={() => openModal(<UploadModal />, 'modal wide')}><span>＋</span> Upload a course</button>
+        <div className="heading-actions">
+          <button className="ghost-button" onClick={() => openModal(<PersonForm />, 'modal wide')}><span>＋</span> Register employee</button>
+          <button className="primary-button" onClick={() => openModal(<UploadModal />, 'modal wide')}><span>＋</span> Upload a course</button>
+        </div>
       </div>
       <section className="kpi-grid">
         <article className="kpi"><span className="kpi-label">Team completion</span><span className="kpi-value tnum">{avg}<span>%</span></span><span className="kpi-sub">average profile completion</span></article>
@@ -288,10 +291,27 @@ export function People() {
 }
 
 function PersonDrawer({ id }) {
-  const { data, me, setRole, toast, openModal } = usePortal();
+  const { data, me, setRole, removeUser, toast, openModal, closeModal } = usePortal();
   const [busy, setBusy] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const p = data.users.find((u) => u.id === id);
   if (!p) return null;
+  const remove = async () => {
+    if (!confirmRemove) {
+      setConfirmRemove(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      await removeUser(p.id);
+      closeModal();
+      toast(`Removed ${p.name} from the portal`);
+    } catch (e) {
+      toast(e.message);
+      setBusy(false);
+      setConfirmRemove(false);
+    }
+  };
   const st = userStats(data.progress, data.courses, id);
   const req = data.courses.filter((c) => c.required);
   const reqLeft = req.filter((c) => pctOf(data.progress, id, c) < COMPLETE_AT);
@@ -334,6 +354,21 @@ function PersonDrawer({ id }) {
       </div>
       <h3>Course by course</h3>
       <ProgressRows user={p} clickable={false} />
+      {p.id !== me.id && (
+        <div className="role-row">
+          <span className="muted">
+            {confirmRemove
+              ? `Remove ${p.name}? Their profile, watch progress and activity are deleted. This can’t be undone.`
+              : 'Remove this person and all their portal data.'}
+          </span>
+          <div className="heading-actions">
+            {confirmRemove && <button className="ghost-button" onClick={() => setConfirmRemove(false)} disabled={busy}>Cancel</button>}
+            <button className={confirmRemove ? 'danger-button' : 'ghost-button'} onClick={remove} disabled={busy}>
+              {busy ? 'Removing…' : confirmRemove ? 'Confirm remove' : 'Remove employee'}
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

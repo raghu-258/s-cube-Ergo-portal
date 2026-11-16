@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS login_codes (
 
 CREATE INDEX IF NOT EXISTS login_codes_email_idx ON login_codes (email);
 
+-- Set when someone chooses not to share their joining date (they aren't asked for it again).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS joined_skipped BOOLEAN NOT NULL DEFAULT FALSE;
+
 -- One row per wish sent, so the daily job never emails the same celebration twice.
 CREATE TABLE IF NOT EXISTS celebration_sends (
   day TEXT NOT NULL,

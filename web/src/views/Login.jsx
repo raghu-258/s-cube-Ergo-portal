@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePortal } from '../portal.jsx';
 import { Brand } from '../components/ui.jsx';
+import { greeting } from '../lib/format.js';
+
+const Steps = ({ at }) => (
+  <div className="login-steps" aria-label={`Step ${at} of 2`}>
+    <span className={at >= 1 ? 'on' : ''} /><span className={at >= 2 ? 'on' : ''} />
+    <small>Step {at} of 2 · {at === 1 ? 'Your work email' : 'Enter the code'}</small>
+  </div>
+);
 
 const GSI_SRC = 'https://accounts.google.com/gsi/client';
 
@@ -25,11 +33,21 @@ export function Login() {
   return (
     <div className="login">
       <section className="login-art">
-        <div className="orbit o1" /><div className="orbit o2" />
+        {/* decoration: drifting glows and the logo's hexagon pattern */}
+        <div className="login-glow" aria-hidden="true"><span className="g1" /><span className="g2" /><span className="g3" /></div>
+        <svg className="login-hex" aria-hidden="true" width="100%" height="100%">
+          <defs>
+            <pattern id="hexes" width="56" height="97" patternUnits="userSpaceOnUse" patternTransform="scale(.9)">
+              <path d="M28 0 56 16v32L28 64 0 48V16zM28 64v33M0 97V81l28-17 28 17v16" fill="none" stroke="currentColor" strokeWidth="1" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#hexes)" />
+        </svg>
+
         <Brand light />
         <div className="login-copy">
           <div className="eyebrow on-dark">S Cube Ergonomics · Employee portal</div>
-          <h1>Welcome to the <em>S Cube</em> Employee Portal.</h1>
+          <h1>Welcome to <br /><em>S Cube Ergonomics</em> Employee Portal.</h1>
           <p>One place for everything you need at work: company updates, resources, training and your profile. Sign in with your S Cube work account to get started.</p>
         </div>
         <div className="login-foot">
@@ -42,10 +60,10 @@ export function Login() {
       </section>
       <section className="login-panel">
         <div className="login-card">
+          <div className="login-hello"><span className="wave" aria-hidden="true">👋</span>{greeting()}</div>
           {otp ? <EmailCodeSignIn domain={domain} /> : <><h2>Sign in</h2><p className="muted">Use your S Cube Google Workspace account. No separate password needed.</p></>}
           {google && <>{otp && <div className="or-divider"><span>or</span></div>}<GoogleButton /></>}
           {!google && !otp && <p className="reach-note">Sign-in isn’t set up yet. Add GOOGLE_CLIENT_ID or SMTP settings on the server.</p>}
-          <div className="domain-note">Only <b>@{domain}</b> accounts can sign in. Personal Gmail and other accounts are turned away.</div>
         </div>
       </section>
     </div>
@@ -105,6 +123,7 @@ function EmailCodeSignIn({ domain }) {
   if (step === 'email') {
     return (
       <form className="otp-form" onSubmit={(e) => { e.preventDefault(); send(); }} noValidate>
+        <Steps at={1} />
         <h2>Sign in</h2>
         <p className="muted">Enter your S Cube work email. We’ll email you a 6-digit code. No password needed.</p>
         <div className="field">
@@ -120,6 +139,7 @@ function EmailCodeSignIn({ domain }) {
 
   return (
     <form className="otp-form" onSubmit={(e) => { e.preventDefault(); verify(); }} noValidate>
+      <Steps at={2} />
       <h2>Check your email</h2>
       <p className="muted">We sent a 6-digit code to <b>{email}</b>. It expires in 10 minutes.</p>
       <div className="field">

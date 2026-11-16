@@ -16,7 +16,17 @@ function nextOccurrence(month, day) {
   return d < t ? on(t.getFullYear() + 1) : d;
 }
 
-// Feed rows from the server -> upcoming items for the next CELEBRATE_DAYS days, soonest first.
+// Always shown on the dashboard: everything in the next CELEBRATE_DAYS days, topped up to at least
+// CELEBRATE_MIN items with the next ones later in the year.
+export const CELEBRATE_MIN = 5;
+
+export function upcomingCelebrations(rows) {
+  const all = celebrationItems(rows);
+  const soon = all.filter((x) => x.days <= CELEBRATE_DAYS);
+  return soon.length >= CELEBRATE_MIN ? soon : all.slice(0, CELEBRATE_MIN);
+}
+
+// Feed rows from the server -> every upcoming item (within a year), soonest first.
 export function celebrationItems(rows) {
   const t = startOfToday();
   return rows.map((r) => {
@@ -26,6 +36,6 @@ export function celebrationItems(rows) {
       years: r.type === 'anniversary' ? date.getFullYear() - r.since : null,
     };
   })
-    .filter((x) => x.days <= CELEBRATE_DAYS && (x.type === 'birthday' || x.years > 0))
+    .filter((x) => x.type === 'birthday' || x.years > 0)
     .sort((a, b) => a.days - b.days || a.name.localeCompare(b.name));
 }

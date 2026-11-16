@@ -192,6 +192,10 @@ export function PortalProvider({ children }) {
       await api(`/users/${uid}/profile`, { method: 'PUT', body: person });
       setData(withTones(await api('/bootstrap')));
     },
+    removeUser: async (uid) => {
+      await api(`/users/${uid}`, { method: 'DELETE' });
+      setData(withTones(await api('/bootstrap')));
+    },
     setRole: async (uid, role) => {
       await api(`/users/${uid}`, { method: 'PATCH', body: { role } });
       setData((d) => ({ ...d, users: d.users.map((u) => (u.id === uid ? { ...u, role } : u)) }));

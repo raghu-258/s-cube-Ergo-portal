@@ -219,6 +219,30 @@ function WatchCourse({ course }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course.id]);
 
+  // ---- full screen (video + controls together) ----
+  const stageEl = useRef(null);
+  const [isFull, setIsFull] = useState(false);
+  const toggleFull = () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else if (stageEl.current && stageEl.current.requestFullscreen) stageEl.current.requestFullscreen().catch(() => {});
+  };
+  useEffect(() => {
+    const onChange = () => setIsFull(document.fullscreenElement === stageEl.current);
+    const onKey = (e) => {
+      if ((e.key !== 'f' && e.key !== 'F') || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || document.querySelector('[role="dialog"]')) return;
+      e.preventDefault();
+      toggleFull();
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      document.removeEventListener('keydown', onKey);
+      if (document.fullscreenElement === stageEl.current) document.exitFullscreen().catch(() => {});
+    };
+  }, []);
+
   // ---- scrub bar ----
   const dragging = useRef(false);
   const fromPointer = (e) => {
@@ -227,6 +251,7 @@ function WatchCourse({ course }) {
   };
 
   const s = S.current;
+  const fsSupported = !!document.fullscreenEnabled; // not on iPhone Safari, which only allows native video full screen
   const pct = pctOf(data.progress, me.id, course);
   const uploader = data.users.find((u) => u.id === course.uploadedBy);
   const speeds = mode === 'yt' ? [1, 1.5, 2] : [1, 1.25, 1.5, 2];
@@ -241,7 +266,9 @@ function WatchCourse({ course }) {
       <div><button className="text-button back" onClick={() => navigate('/library')}>← Course library</button></div>
       <div className="watch-grid">
         <div className="player-col">
-          <div className="player">
+          {/* Video and controls go full screen together, so seeking and progress tracking keep working. */}
+          <div className={`stage${isFull ? ' is-full' : ''}`} ref={stageEl}>
+          <div className="player" onDoubleClick={fsSupported && !blocked ? toggleFull : undefined}>
             {mode === 'video' && src && !failed && (
               <video
                 ref={videoEl} src={src} playsInline preload="metadata" onClick={togglePlay}
@@ -293,6 +320,15 @@ function WatchCourse({ course }) {
                 {speeds.map((x) => <option key={x} value={x}>{x}×</option>)}
               </select>
             </label>
+            {fsSupported && (
+              <button className="ctrl-full" onClick={toggleFull} disabled={blocked}
+                aria-label={isFull ? 'Exit full screen' : 'Full screen'} data-tip={isFull ? 'Exit full screen (Esc)' : 'Full screen (F)'}>
+                {isFull
+                  ? <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  : <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+              </button>
+            )}
+          </div>
           </div>
           <div className="scrub-legend"><span><i />Parts you have watched</span><span>Skipping ahead doesn’t count toward your progress.</span></div>
           <div className="watch-info">

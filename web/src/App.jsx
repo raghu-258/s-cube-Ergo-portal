@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { ProfileGate, profileIncomplete } from './components/ProfileForm.jsx';
 import { Shell } from './components/Shell.jsx';
 import { Brand, ModalHost, Toast, Tooltip } from './components/ui.jsx';
 import { usePortal } from './portal.jsx';
@@ -10,7 +11,7 @@ import { Profile } from './views/Profile.jsx';
 import { Watch } from './views/Watch.jsx';
 
 export function App() {
-  const { status, error, me, load } = usePortal();
+  const { status, error, me, data, load } = usePortal();
 
   let page;
   if (status === 'loading') {
@@ -27,19 +28,27 @@ export function App() {
     page = <Login />;
   } else {
     const admin = me.role === 'admin';
+    // Nobody can use the portal until their profile is complete: the dashboard shows blurred and
+    // unreachable (inert) behind a popup that can't be closed.
+    const gated = profileIncomplete(data.profile);
     page = (
-      <Shell>
-        <Routes>
-          <Route path="/" element={admin ? <Navigate to="/admin" replace /> : <Home />} />
-          <Route path="/library" element={<Library />} />
-          <Route path="/watch/:id" element={<Watch />} />
-          <Route path="/profile" element={<Profile />} />
-          {admin && <Route path="/admin" element={<Overview />} />}
-          {admin && <Route path="/admin/courses" element={<Manage />} />}
-          {admin && <Route path="/admin/people" element={<People />} />}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Shell>
+      <>
+        <div className={gated ? 'gated' : undefined} inert={gated} aria-hidden={gated || undefined}>
+          <Shell>
+            <Routes>
+              <Route path="/" element={admin ? <Navigate to="/admin" replace /> : <Home />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/watch/:id" element={<Watch />} />
+              <Route path="/profile" element={<Profile />} />
+              {admin && <Route path="/admin" element={<Overview />} />}
+              {admin && <Route path="/admin/courses" element={<Manage />} />}
+              {admin && <Route path="/admin/people" element={<People />} />}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Shell>
+        </div>
+        {gated && <ProfileGate />}
+      </>
     );
   }
 

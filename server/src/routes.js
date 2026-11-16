@@ -5,7 +5,7 @@ import {
 } from './auth.js';
 import { celebrationsFeed, loadPeople, runDailyWishes, sendTestMail, todayInTimezone } from './celebrations.js';
 import { config } from './config.js';
-import { query } from './db.js';
+import { query, tx } from './db.js';
 import { companyEmail, rateLimit, sendLoginCode, verifyLoginCode } from './otp.js';
 import * as storage from './storage.js';
 import { COMPLETE_AT, HttpError, mergeRanges, nameFromEmail, str, watchedSecs } from './util.js';
@@ -131,6 +131,7 @@ api.get('/bootstrap', requireUser, async (req, res) => {
       name: me.name, dept: me.dept,
       birthday: me.birthday_month ? { m: me.birthday_month, d: me.birthday_day } : null,
       joined: me.joined_on || null,
+      joinedSkipped: !!me.joined_skipped,
       optOut: me.celebrate_opt_out,
     },
     users: users.rows.map((u) => userOut(u, admin)),
@@ -208,9 +209,11 @@ api.put('/profile', requireUser, async (req, res) => {
   const p = req.body || {};
   const f = profileFields(p);
   await query(
-    `UPDATE users SET name = $2, dept = $3, birthday_month = $4, birthday_day = $5, joined_on = $6, celebrate_opt_out = $7
+    `UPDATE users SET name = $2, dept = $3, birthday_month = $4, birthday_day = $5, joined_on = $6, celebrate_opt_out = $7,
+       joined_skipped = $8
      WHERE id = $1`,
-    [req.user.id, f.name, f.dept, f.bm, f.bd, f.joined, p.optOut === true],
+    // Skipping only counts while no joining date is given.
+    [req.user.id, f.name, f.dept, f.bm, f.bd, f.joined, p.optOut === true, !f.joined && p.joinedSkipped === true],
   );
   res.json({ ok: true });
 });
@@ -327,6 +330,24 @@ api.patch('/users/:id', requireAdmin, async (req, res) => {
     throw new HttpError(400, `${user.email} is listed in ADMIN_EMAILS, so they stay an admin.`);
   }
   await query('UPDATE users SET role = $2 WHERE id = $1', [user.id, role]);
+  res.json({ ok: true });
+});
+
+// An admin removes someone: their profile, watch progress and activity are deleted (progress and events
+// cascade). Courses they published stay. Their session stops working at once. Anyone with a company email
+// can still sign in again later, which starts a fresh, empty profile.
+api.delete('/users/:id', requireAdmin, async (req, res) => {
+  const { rows: [user] } = await query('SELECT * FROM users WHERE id = $1', [Number(req.params.id) || 0]);
+  if (!user) throw new HttpError(404, 'That person was not found.');
+  if (user.id === req.user.id) throw new HttpError(400, 'You can’t remove yourself.');
+  if (config.adminEmails.includes(user.email)) {
+    throw new HttpError(400, `${user.email} is listed in ADMIN_EMAILS, so they can’t be removed here.`);
+  }
+  await tx(async (db) => {
+    await db.query('UPDATE courses SET published_by = NULL WHERE published_by = $1', [user.id]);
+    await db.query('DELETE FROM login_codes WHERE email = $1', [user.email]);
+    await db.query('DELETE FROM users WHERE id = $1', [user.id]);
+  });
   res.json({ ok: true });
 });
 

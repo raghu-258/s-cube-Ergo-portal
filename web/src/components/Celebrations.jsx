@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CELEBRATE_DAYS, celebrationItems, fmtDay, whenLabel } from '../lib/celebrations.js';
+import { CELEBRATE_DAYS, celebrationItems, fmtDay, upcomingCelebrations, whenLabel } from '../lib/celebrations.js';
 import { firstName, toneOf } from '../lib/format.js';
 import { usePortal } from '../portal.jsx';
 import { Avatar, ModalHeader } from './ui.jsx';
@@ -8,11 +8,12 @@ import { Avatar, ModalHeader } from './ui.jsx';
 export function CelebrationsPanel() {
   const { data, me, openModal } = usePortal();
   const navigate = useNavigate();
-  const list = celebrationItems(data.celebrations);
+  const list = upcomingCelebrations(data.celebrations);
+  const withinWindow = list.every((x) => x.days <= CELEBRATE_DAYS);
   return (
     <article className="panel">
       <div className="panel-heading">
-        <div><div className="eyebrow">Next {CELEBRATE_DAYS} days</div><h2>Upcoming celebrations</h2></div>
+        <div><div className="eyebrow">{withinWindow && list.length ? `Next ${CELEBRATE_DAYS} days` : 'Coming up'}</div><h2>Upcoming celebrations</h2></div>
         <div className="celebrate-actions">
           {me.role === 'admin' && <button className="text-button" onClick={() => openModal(<TestMailModal />)}>Send test email <span>✉</span></button>}
           <button className="text-button" onClick={() => navigate('/profile')}>Add your dates <span>↗</span></button>
@@ -34,7 +35,7 @@ export function CelebrationsPanel() {
             );
           })}
         </div>
-      ) : <p className="muted">No birthdays or work anniversaries in the next {CELEBRATE_DAYS} days.</p>}
+      ) : <p className="muted">Nobody has added a birthday or joining date yet. Add yours under My profile to appear here.</p>}
     </article>
   );
 }

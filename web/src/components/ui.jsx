@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { COMPLETE_AT, THEMES, fmtClock, fmtDur, fmtRel, initials, isNew } from '../lib/format.js';
 import { pctOf } from '../lib/progress.js';
@@ -35,10 +35,35 @@ export const Ring = ({ pct, label, size = '' }) => (
   </div>
 );
 
+// Play links for uploaded videos, fetched once per course and shared by every thumbnail.
+const previewUrls = new Map(); // course id -> Promise<url | null>
+
+// The course's own picture: YouTube's thumbnail, or a frame ~1 s into an uploaded video.
+function useCoursePicture(course) {
+  const { videoUrl } = usePortal();
+  const [videoSrc, setVideoSrc] = useState(null);
+  useEffect(() => {
+    if (course.youtube || !course.hasVideo) return undefined;
+    let live = true;
+    if (!previewUrls.has(course.id)) previewUrls.set(course.id, videoUrl(course.id).catch(() => null));
+    previewUrls.get(course.id).then((url) => { if (live) setVideoSrc(url); });
+    return () => { live = false; };
+  }, [course.id, course.youtube, course.hasVideo, videoUrl]);
+  if (course.youtube) return { kind: 'img', src: `https://i.ytimg.com/vi/${course.youtube}/hqdefault.jpg` };
+  if (videoSrc) return { kind: 'video', src: `${videoSrc}#t=1` };
+  return null;
+}
+
 export function Thumb({ course }) {
   const t = THEMES[course.theme % THEMES.length];
+  const pic = useCoursePicture(course);
+  const [failed, setFailed] = useState(false);
+  const media = pic && !failed;
   return (
-    <span className="thumb" style={{ '--t1': t.b, '--t2': t.c, '--tink': t.ink }}>
+    <span className={`thumb${media ? ' has-media' : ''}`} style={{ '--t1': t.b, '--t2': t.c, '--tink': t.ink }}>
+      {media && (pic.kind === 'img'
+        ? <img className="thumb-media" src={pic.src} alt="" loading="lazy" onError={() => setFailed(true)} />
+        : <video className="thumb-media" src={pic.src} muted playsInline preload="metadata" tabIndex={-1} onError={() => setFailed(true)} />)}
       <span className="thumb-code">AI</span><span className="play-button">▶</span>
       <span className="thumb-dur tnum">{fmtClock(course.duration)}</span>
     </span>
