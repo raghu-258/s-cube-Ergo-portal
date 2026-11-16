@@ -49,11 +49,11 @@ function AboutYou() {
   const [form, setForm] = useState({
     name: p.name, dept: p.dept,
     day: p.birthday ? String(p.birthday.d) : '', month: p.birthday ? String(p.birthday.m) : '',
-    joined: p.joined || '', optOut: p.optOut,
+    joined: p.joined || '',
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const today = isoDate(startOfToday());
 
   const submit = async (e) => {
@@ -67,9 +67,9 @@ function AboutYou() {
     setBusy(true);
     try {
       await saveProfile({
-        name: form.name.trim(), dept: form.dept.trim(), birthday: d ? { m, d } : null, joined: form.joined || null, optOut: form.optOut,
+        name: form.name.trim(), dept: form.dept.trim(), birthday: d ? { m, d } : null, joined: form.joined || null, optOut: false,
       });
-      toast(form.optOut ? 'Saved. You won’t be celebrated.' : 'Your details are saved');
+      toast('Your details are saved');
     } catch (err) {
       setError(err.message);
     }
@@ -101,7 +101,6 @@ function AboutYou() {
           </div>
         </div>
         <div className="field"><label htmlFor="pf-joined">Joining date at Scube</label><input id="pf-joined" type="date" min="1950-01-01" max={today} value={form.joined} onChange={set('joined')} /></div>
-        <label className="check full" htmlFor="pf-opt"><input id="pf-opt" type="checkbox" checked={form.optOut} onChange={set('optOut')} /> Don’t celebrate me (no company email, not shown on the dashboard)</label>
         {error && <p className="field-error full">{error}</p>}
         <div className="modal-actions full"><button type="submit" className="primary-button" disabled={busy}>{busy ? 'Saving…' : 'Save details'}</button></div>
       </form>

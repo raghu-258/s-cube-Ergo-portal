@@ -10,6 +10,19 @@ export const Avatar = ({ user, size = '' }) => (
 
 export const Bar = ({ pct, id }) => <span className="bar"><span id={id} style={{ width: `${pct}%` }} /></span>;
 
+// S CUBE hexagon mark + wordmark (matches the scube-ergo.com logo). `light` = on a dark background.
+export function Brand({ light, caption = 'Employee portal' }) {
+  return (
+    <div className={`brand-lockup${light ? ' light' : ''}`}>
+      <img className="brand-mark" src="/scube-mark.png" alt="" width="34" height="34" />
+      <div>
+        <div className="brand-name">S CUBE</div>
+        {caption && <div className="brand-caption">{caption}</div>}
+      </div>
+    </div>
+  );
+}
+
 export function StatusChip({ pct }) {
   if (pct >= COMPLETE_AT) return <span className="chip chip-done">✓ Completed</span>;
   if (pct > 0) return <span className="chip chip-prog">◷ In progress</span>;

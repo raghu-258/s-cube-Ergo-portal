@@ -1,6 +1,6 @@
-# Scube Learning Portal
+# S Cube Employee Portal
 
-AI video courses for Scube employees, with per-person watch progress, an admin dashboard,
+The S Cube company portal for employees: AI video training courses, with per-person watch progress, an admin dashboard,
 and birthday & work-anniversary emails to the whole company.
 
 | Part | Technology | Where it runs |

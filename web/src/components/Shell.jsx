@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useParams } from 'react-router-dom';
 import { usePortal } from '../portal.jsx';
-import { Avatar, ModalHeader } from './ui.jsx';
+import { Avatar, Brand, ModalHeader } from './ui.jsx';
 
 const LEARNING = [['/library', 'Course library', '▷'], ['/profile', 'My profile', '◎']];
 const ADMIN = [['/admin', 'Overview', '◈'], ['/admin/courses', 'Manage courses', '▤'], ['/admin/people', 'People & progress', '⌁']];
@@ -15,13 +15,13 @@ export function Shell({ children }) {
   const { pathname } = useLocation();
   const watching = pathname.startsWith('/watch/');
   const groups = me.role === 'admin'
-    ? [['Admin', ADMIN], ['My learning', LEARNING]]
-    : [['My learning', [['/', 'Home', '⌂'], ...LEARNING]]];
+    ? [['Admin', ADMIN], ['My workspace', LEARNING]]
+    : [['My workspace', [['/', 'Home', '⌂'], ...LEARNING]]];
 
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="Primary navigation">
-        <div className="brand-lockup"><div className="brand-mark">S</div><div><div className="brand-name">scube</div><div className="brand-caption">learning portal</div></div></div>
+        <Brand />
         <nav className="nav">
           {groups.map(([label, items]) => (
             <div className="nav-group" key={label}>
@@ -66,7 +66,7 @@ function Breadcrumb() {
   const course = pathname.startsWith('/watch/') ? data.courses.find((c) => c.id === pathname.split('/')[2]) : null;
   return (
     <div className="breadcrumb">
-      <span>{pathname.startsWith('/admin') ? 'Admin' : 'Learning'}</span><span className="slash">/</span>
+      <span>{pathname.startsWith('/admin') ? 'Admin' : 'Portal'}</span><span className="slash">/</span>
       <strong>{course || pathname.startsWith('/watch/') ? 'Course library' : PAGE_NAMES[pathname] || (me.role === 'admin' ? 'Overview' : 'Home')}</strong>
       {course && <><span className="slash">/</span><span>{course.title}</span></>}
     </div>

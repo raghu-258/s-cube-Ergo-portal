@@ -182,6 +182,16 @@ export function PortalProvider({ children }) {
       await api('/profile', { method: 'PUT', body: profile });
       setData(withTones(await api('/bootstrap')));
     },
+    // Admin: register a new employee, or update someone's name, department, birthday and joining date.
+    registerUser: async (person) => {
+      const { user } = await api('/users', { method: 'POST', body: person });
+      setData(withTones(await api('/bootstrap')));
+      return user;
+    },
+    updateUser: async (uid, person) => {
+      await api(`/users/${uid}/profile`, { method: 'PUT', body: person });
+      setData(withTones(await api('/bootstrap')));
+    },
     setRole: async (uid, role) => {
       await api(`/users/${uid}`, { method: 'PATCH', body: { role } });
       setData((d) => ({ ...d, users: d.users.map((u) => (u.id === uid ? { ...u, role } : u)) }));

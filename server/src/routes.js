@@ -13,7 +13,15 @@ import { COMPLETE_AT, HttpError, mergeRanges, nameFromEmail, str, watchedSecs } 
 export const api = express.Router();
 
 // ---- shapes sent to the browser ----
-const userOut = (u) => ({ id: String(u.id), name: u.name, email: u.email, dept: u.dept, role: u.role });
+// Admins also get each person's birthday (day + month only) and joining date, to keep them up to date.
+const userOut = (u, admin = false) => ({
+  id: String(u.id), name: u.name, email: u.email, dept: u.dept, role: u.role,
+  ...(admin ? {
+    birthday: u.birthday_month ? { m: u.birthday_month, d: u.birthday_day } : null,
+    joined: u.joined_on || null,
+    signedIn: !!u.last_active,
+  } : {}),
+});
 
 const courseOut = (c) => ({
   id: c.id, title: c.title, short: c.short, category: c.category, desc: c.description,
@@ -98,7 +106,7 @@ api.get('/bootstrap', requireUser, async (req, res) => {
     await query('UPDATE users SET last_active = now() WHERE id = $1', [me.id]);
   }
   const [users, courses, progress, events, people] = await Promise.all([
-    query('SELECT id, name, email, dept, role FROM users ORDER BY name'),
+    query('SELECT id, name, email, dept, role, birthday_month, birthday_day, joined_on, last_active FROM users ORDER BY name'),
     query('SELECT * FROM courses WHERE removed_at IS NULL ORDER BY published_at'),
     admin
       ? query('SELECT p.* FROM progress p JOIN courses c ON c.id = p.course_id WHERE c.removed_at IS NULL')
@@ -125,7 +133,7 @@ api.get('/bootstrap', requireUser, async (req, res) => {
       joined: me.joined_on || null,
       optOut: me.celebrate_opt_out,
     },
-    users: users.rows.map(userOut),
+    users: users.rows.map((u) => userOut(u, admin)),
     courses: courses.rows.map(courseOut),
     progress: progressOut,
     events: events.rows.map((e) => ({ user: String(e.user_id), course: e.course_id, type: e.type, at: new Date(e.at).getTime() })),
@@ -173,10 +181,10 @@ api.post('/progress', requireUser, async (req, res) => {
 });
 
 // ---- profile: name, department, birthday, joining date ----
-api.put('/profile', requireUser, async (req, res) => {
-  const p = req.body || {};
+// Checks the fields of a profile form (used by employees for themselves and by admins for anyone).
+function profileFields(p) {
   const name = str(p.name, 80);
-  if (!name) throw new HttpError(400, 'Add your name.');
+  if (!name) throw new HttpError(400, 'Add a name.');
   let bm = null, bd = null;
   if (p.birthday) {
     bm = Number(p.birthday.m);
@@ -193,10 +201,16 @@ api.put('/profile', requireUser, async (req, res) => {
     }
     joined = m[0];
   }
+  return { name, dept: str(p.dept, 80), bm, bd, joined };
+}
+
+api.put('/profile', requireUser, async (req, res) => {
+  const p = req.body || {};
+  const f = profileFields(p);
   await query(
     `UPDATE users SET name = $2, dept = $3, birthday_month = $4, birthday_day = $5, joined_on = $6, celebrate_opt_out = $7
      WHERE id = $1`,
-    [req.user.id, name, str(p.dept, 80), bm, bd, joined, p.optOut === true],
+    [req.user.id, f.name, f.dept, f.bm, f.bd, f.joined, p.optOut === true],
   );
   res.json({ ok: true });
 });
@@ -277,6 +291,32 @@ api.delete('/courses/:id', requireAdmin, async (req, res) => {
 });
 
 // ---- people (admins) ----
+// Registers an employee before their first sign-in, with their details. Signing in later keeps these details.
+api.post('/users', requireAdmin, async (req, res) => {
+  const p = req.body || {};
+  const email = companyEmail(p.email);
+  const f = profileFields(p);
+  const role = config.adminEmails.includes(email) ? 'admin' : 'employee';
+  const { rows: [user] } = await query(
+    `INSERT INTO users (email, name, dept, role, birthday_month, birthday_day, joined_on) VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (email) DO NOTHING RETURNING *`,
+    [email, f.name, f.dept, role, f.bm, f.bd, f.joined],
+  );
+  if (!user) throw new HttpError(409, `${email} is already registered. Find them in the list to edit their details.`);
+  res.json({ user: userOut(user, true) });
+});
+
+// An admin updates someone's name, department, birthday and joining date.
+api.put('/users/:id/profile', requireAdmin, async (req, res) => {
+  const f = profileFields(req.body || {});
+  const { rows: [user] } = await query(
+    `UPDATE users SET name = $2, dept = $3, birthday_month = $4, birthday_day = $5, joined_on = $6 WHERE id = $1 RETURNING *`,
+    [Number(req.params.id) || 0, f.name, f.dept, f.bm, f.bd, f.joined],
+  );
+  if (!user) throw new HttpError(404, 'That person was not found.');
+  res.json({ user: userOut(user, true) });
+});
+
 api.patch('/users/:id', requireAdmin, async (req, res) => {
   const role = req.body && req.body.role;
   if (!['admin', 'employee'].includes(role)) throw new HttpError(400, 'Unknown role.');

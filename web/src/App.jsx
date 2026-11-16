@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Shell } from './components/Shell.jsx';
-import { ModalHost, Toast, Tooltip } from './components/ui.jsx';
+import { Brand, ModalHost, Toast, Tooltip } from './components/ui.jsx';
 import { usePortal } from './portal.jsx';
 import { Manage, Overview, People } from './views/Admin.jsx';
 import { Home } from './views/Home.jsx';
@@ -14,11 +14,11 @@ export function App() {
 
   let page;
   if (status === 'loading') {
-    page = <div className="splash"><div className="brand-mark">S</div><p className="muted">Loading the portal…</p></div>;
+    page = <div className="splash"><Brand caption={null} /><p className="muted">Loading the portal…</p></div>;
   } else if (status === 'error') {
     page = (
       <div className="splash">
-        <div className="brand-mark">S</div>
+        <Brand caption={null} />
         <h2>The portal couldn’t load</h2><p className="muted">{error}</p>
         <button className="primary-button" onClick={load}>Try again</button>
       </div>

@@ -1,7 +1,7 @@
 {
   "name": "scube-portal",
   "private": true,
-  "description": "Scube employee learning portal: React front end, Node.js API, PostgreSQL, Google Cloud Storage",
+  "description": "S Cube Employee Portal: React front end, Node.js API, PostgreSQL, Google Cloud Storage",
   "workspaces": [
     "server",
     "web"

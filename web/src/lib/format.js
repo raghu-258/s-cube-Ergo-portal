@@ -4,14 +4,14 @@ export const MIN = 60e3, HOUR = 60 * MIN, DAY = 24 * HOUR;
 
 // a = deep, b/c = thumbnail gradient, ink = text on thumbnail
 export const THEMES = [
-  { a: '#1f6f68', b: '#83c1bd', c: '#d0e9df', ink: '#123f3b' },
+  { a: '#0c7570', b: '#5fbab4', c: '#d3ecea', ink: '#073532' },
   { a: '#a4503a', b: '#f0a58f', c: '#fbe0d5', ink: '#6b2d1d' },
   { a: '#8a6514', b: '#f0c86d', c: '#fbeccb', ink: '#5c4508' },
   { a: '#554890', b: '#a69ad8', c: '#e4dff5', ink: '#342a66' },
   { a: '#2f6a93', b: '#8dbbe0', c: '#dcebf6', ink: '#1c4461' },
-  { a: '#203f42', b: '#2a5256', c: '#5b9a90', ink: '#e7f5f0' },
+  { a: '#0b3f3d', b: '#0c5f5b', c: '#0f8f89', ink: '#e6f4f3' },
   { a: '#8f4450', b: '#e5a3a8', c: '#f7dfe0', ink: '#5e2630' },
-  { a: '#4f6833', b: '#a9c28a', c: '#e5eed9', ink: '#34461f' },
+  { a: '#2f7d4a', b: '#7ccf8f', c: '#dcf1e1', ink: '#1b4a2b' },
 ];
 
 export const CATEGORIES = ['Foundations', 'Productivity', 'Sales', 'Policy', 'Design', 'Communication', 'Leadership', 'Operations'];

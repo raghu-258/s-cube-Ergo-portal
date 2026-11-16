@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePortal } from '../portal.jsx';
+import { Brand } from '../components/ui.jsx';
 
 const GSI_SRC = 'https://accounts.google.com/gsi/client';
 
@@ -25,16 +26,23 @@ export function Login() {
     <div className="login">
       <section className="login-art">
         <div className="orbit o1" /><div className="orbit o2" />
-        <div className="brand-lockup light"><div className="brand-mark">S</div><div><div className="brand-name">scube</div><div className="brand-caption">learning portal</div></div></div>
+        <Brand light />
         <div className="login-copy">
-          <div className="eyebrow on-dark">For every Scube employee</div>
-          <h1>Learn to work with <em>AI</em>, at your own pace.</h1>
-          <p>Short video courses made for Scube teams. Your progress saves to your profile, so you can pick up exactly where you left off.</p>
+          <div className="eyebrow on-dark">S Cube Ergonomics · Employee portal</div>
+          <h1>Welcome to the <em>S Cube</em> Employee Portal.</h1>
+          <p>One place for everything you need at work: company updates, resources, training and your profile. Sign in with your S Cube work account to get started.</p>
+        </div>
+        <div className="login-foot">
+          <div className="login-stats">
+            <div><strong>Humanscale</strong><span>Official partner in India</span></div>
+            <div><strong>3 cities</strong><span>Bengaluru · Hyderabad · Pune</span></div>
+          </div>
+          <a className="login-site" href="https://www.scube-ergo.com/" target="_blank" rel="noreferrer">scube-ergo.com ↗</a>
         </div>
       </section>
       <section className="login-panel">
         <div className="login-card">
-          {otp ? <EmailCodeSignIn domain={domain} /> : <><h2>Sign in</h2><p className="muted">Use your Scube Google Workspace account. No separate password needed.</p></>}
+          {otp ? <EmailCodeSignIn domain={domain} /> : <><h2>Sign in</h2><p className="muted">Use your S Cube Google Workspace account. No separate password needed.</p></>}
           {google && <>{otp && <div className="or-divider"><span>or</span></div>}<GoogleButton /></>}
           {!google && !otp && <p className="reach-note">Sign-in isn’t set up yet. Add GOOGLE_CLIENT_ID or SMTP settings on the server.</p>}
           <div className="domain-note">Only <b>@{domain}</b> accounts can sign in. Personal Gmail and other accounts are turned away.</div>
@@ -98,7 +106,7 @@ function EmailCodeSignIn({ domain }) {
     return (
       <form className="otp-form" onSubmit={(e) => { e.preventDefault(); send(); }} noValidate>
         <h2>Sign in</h2>
-        <p className="muted">Enter your Scube work email. We’ll email you a 6-digit code. No password needed.</p>
+        <p className="muted">Enter your S Cube work email. We’ll email you a 6-digit code. No password needed.</p>
         <div className="field">
           <label htmlFor="login-email">Work email</label>
           <input id="login-email" type="email" inputMode="email" autoComplete="email" placeholder={`name@${domain}`}
@@ -134,7 +142,7 @@ function EmailCodeSignIn({ domain }) {
         </button>
         <button type="button" className="text-button" disabled={busy} onClick={() => { setStep('email'); setError(''); }}>Use a different email</button>
       </div>
-      <p className="fine">Can’t find it? Check your spam folder. The email comes from Scube Learning Portal.</p>
+      <p className="fine">Can’t find it? Check your spam folder. The email comes from S Cube Employee Portal.</p>
     </form>
   );
 }

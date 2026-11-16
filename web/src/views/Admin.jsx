@@ -4,6 +4,7 @@ import { CelebrationsPanel } from '../components/Celebrations.jsx';
 import { ActivityList, Avatar, Bar, ModalHeader, ProgressRows, Ring, Thumb } from '../components/ui.jsx';
 import { UploadModal } from '../components/UploadModal.jsx';
 import { COMPLETE_AT, DAY, byNewest, firstName, fmtClock, fmtDate, fmtDur, fmtRel, greeting, heatClass, todayLabel } from '../lib/format.js';
+import { MONTHS, isoDate, startOfToday } from '../lib/celebrations.js';
 import { courseStats, pctOf, userStats } from '../lib/progress.js';
 import { usePortal } from '../portal.jsx';
 
@@ -146,6 +147,96 @@ export function Manage() {
 
 const LEGEND = [['h0', 'Not started'], ['h1', '1–24%'], ['h2', '25–49%'], ['h3', '50–74%'], ['h4', `75–${COMPLETE_AT - 1}%`], ['h5', `${COMPLETE_AT}%+ completed`]];
 
+const birthdayLabel = (b) => (b ? `${b.d} ${MONTHS[b.m - 1]}` : 'Not added');
+const joinedLabel = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not added');
+
+// Register a new employee (person = null) or edit someone's details. Used by admins only.
+function PersonForm({ person }) {
+  const { data, config, registerUser, updateUser, closeModal, openModal, toast } = usePortal();
+  const editing = !!person;
+  const [form, setForm] = useState({
+    email: person ? person.email : '', name: person ? person.name : '', dept: person ? person.dept : '',
+    day: person && person.birthday ? String(person.birthday.d) : '', month: person && person.birthday ? String(person.birthday.m) : '',
+    joined: (person && person.joined) || '',
+  });
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const today = isoDate(startOfToday());
+  const domain = config ? config.domain : 'scube-ergo.com';
+  const depts = [...new Set(data.users.map((u) => u.dept).filter(Boolean))].sort();
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    const d = Number(form.day), m = Number(form.month);
+    const email = form.email.trim().toLowerCase();
+    if (!editing && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError(`Enter their full work email, like name@${domain}.`);
+    if (!form.name.trim()) return setError('Add their name.');
+    if (!d !== !m) return setError('Pick both the day and the month of the birthday, or leave both empty.');
+    if (d && new Date(2000, m - 1, d).getMonth() !== m - 1) return setError(`${MONTHS[m - 1]} doesn’t have ${d} days.`);
+    if (form.joined && (form.joined > today || form.joined < '1950-01-01')) return setError('Enter a joining date that isn’t in the future.');
+    const body = { name: form.name.trim(), dept: form.dept.trim(), birthday: d ? { m, d } : null, joined: form.joined || null };
+    setBusy(true);
+    try {
+      if (editing) {
+        await updateUser(person.id, body);
+        toast(`Saved ${body.name}’s details`);
+        openModal(<PersonDrawer id={person.id} />, 'drawer');
+      } else {
+        await registerUser({ ...body, email });
+        toast(`${body.name} is registered. They can sign in with ${email}.`);
+        closeModal();
+      }
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <ModalHeader eyebrow={editing ? 'Edit employee' : 'New employee'} title={editing ? person.name : 'Register an employee'} />
+      <p className="muted" style={{ marginTop: -6 }}>
+        {editing
+          ? 'Birthday and joining date drive the company-wide celebration emails. Only the day and month of the birthday are kept.'
+          : 'Add someone before they first sign in. When they sign in with this work email, these details are already on their profile.'}
+      </p>
+      <form className="form-grid" onSubmit={submit} noValidate>
+        <div className="field full">
+          <label htmlFor="pr-email">Work email</label>
+          <input id="pr-email" type="email" inputMode="email" placeholder={`name@${domain}`} value={form.email} onChange={set('email')} readOnly={editing} autoFocus={!editing} />
+        </div>
+        <div className="field"><label htmlFor="pr-name">Full name</label><input id="pr-name" value={form.name} onChange={set('name')} maxLength={80} autoFocus={editing} /></div>
+        <div className="field">
+          <label htmlFor="pr-dept">Department</label>
+          <input id="pr-dept" list="pr-depts" value={form.dept} onChange={set('dept')} maxLength={80} placeholder="e.g. Sales" />
+          <datalist id="pr-depts">{depts.map((x) => <option key={x} value={x} />)}</datalist>
+        </div>
+        <div className="field">
+          <label htmlFor="pr-day">Date of birth (day &amp; month)</label>
+          <div className="inline-field">
+            <select id="pr-day" aria-label="Birthday day" value={form.day} onChange={set('day')}>
+              <option value="">Day</option>
+              {Array.from({ length: 31 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
+            </select>
+            <select aria-label="Birthday month" value={form.month} onChange={set('month')}>
+              <option value="">Month</option>
+              {MONTHS.map((name, i) => <option key={name} value={i + 1}>{name}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="field"><label htmlFor="pr-joined">Date of joining</label><input id="pr-joined" type="date" min="1950-01-01" max={today} value={form.joined} onChange={set('joined')} /></div>
+        {error && <p className="field-error full" role="alert">{error}</p>}
+        <div className="modal-actions full">
+          <button type="button" className="ghost-button" onClick={() => (editing ? openModal(<PersonDrawer id={person.id} />, 'drawer') : closeModal())}>Cancel</button>
+          <button type="submit" className="primary-button" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save details' : 'Register employee'}</button>
+        </div>
+      </form>
+    </>
+  );
+}
+
 export function People() {
   const { data, openModal } = usePortal();
   const [q, setQ] = useState('');
@@ -163,8 +254,9 @@ export function People() {
       <div className="page-heading">
         <div>
           <div className="eyebrow">Admin</div><h1>People & progress</h1>
-          <p className="heading-copy">How much of each course every employee has watched. People appear here after they first sign in. Select a person for their full profile.</p>
+          <p className="heading-copy">How much of each course every employee has watched. Register people before they sign in, or select anyone to see their profile and update their birthday and joining date.</p>
         </div>
+        <button className="primary-button" onClick={() => openModal(<PersonForm />, 'modal wide')}><span>＋</span> Register employee</button>
       </div>
       <section className="panel">
         <div className="toolbar">
@@ -179,7 +271,7 @@ export function People() {
           <tbody>
             {rows.map(({ p, s }) => (
               <tr key={p.id} className="clickable" onClick={() => openModal(<PersonDrawer id={p.id} />, 'drawer')}>
-                <td><div className="employee"><Avatar user={p} /><span><strong>{p.name}</strong><small>{p.dept || 'No department'} · {fmtRel(s.last)}</small></span></div></td>
+                <td><div className="employee"><Avatar user={p} /><span><strong>{p.name}</strong><small>{p.dept || 'No department'} · {p.signedIn === false ? 'Not signed in yet' : fmtRel(s.last)}</small></span></div></td>
                 <td className="overall-cell"><div className="table-progress"><Bar pct={s.pct} /><b className="tnum">{s.pct}%</b></div></td>
                 {courses.map((c) => {
                   const v = pctOf(data.progress, p.id, c);
@@ -196,7 +288,7 @@ export function People() {
 }
 
 function PersonDrawer({ id }) {
-  const { data, me, setRole, toast } = usePortal();
+  const { data, me, setRole, toast, openModal } = usePortal();
   const [busy, setBusy] = useState(false);
   const p = data.users.find((u) => u.id === id);
   if (!p) return null;
@@ -229,7 +321,15 @@ function PersonDrawer({ id }) {
         </div>
       </div>
       <div className="role-row">
-        <span><strong>Portal role:</strong> {p.role === 'admin' ? 'Admin' : 'Employee'}</span>
+        <div className="person-facts">
+          <span><small>Date of birth</small><strong>{birthdayLabel(p.birthday)}</strong></span>
+          <span><small>Date of joining</small><strong>{joinedLabel(p.joined)}</strong></span>
+          <span><small>Department</small><strong>{p.dept || 'Not added'}</strong></span>
+        </div>
+        <button className="ghost-button" onClick={() => openModal(<PersonForm person={p} />, 'modal wide')}>Edit details</button>
+      </div>
+      <div className="role-row">
+        <span><strong>Portal role:</strong> {p.role === 'admin' ? 'Admin' : 'Employee'}{p.signedIn === false ? ' · not signed in yet' : ''}</span>
         {p.id !== me.id && <button className="ghost-button" onClick={changeRole} disabled={busy}>{p.role === 'admin' ? 'Remove admin access' : 'Make admin'}</button>}
       </div>
       <h3>Course by course</h3>

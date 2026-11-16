@@ -33,7 +33,7 @@ export async function sendLoginCode(email) {
   const { rows: [saved] } = await query('INSERT INTO login_codes (email, code_hash, expires_at) VALUES ($1, $2, $3) RETURNING id',
     [email, hashCode(email, code), new Date(Date.now() + CODE_MINUTES * 60e3)]);
   try {
-    await sendMail({ to: email, fromName: 'Scube Learning Portal', subject: `${code} is your Scube portal sign-in code`, html: renderCode(code) });
+    await sendMail({ to: email, fromName: 'S Cube Employee Portal', subject: `${code} is your S Cube Employee Portal sign-in code`, html: renderCode(code) });
   } catch (e) {
     console.error('Could not send sign-in code to', email, e.message);
     await query('DELETE FROM login_codes WHERE id = $1', [saved.id]); // so they can retry straight away
@@ -77,7 +77,7 @@ function renderCode(code) {
   return `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;border:1px solid #e6e9e7;border-radius:12px;overflow:hidden">
       <div style="background:#203f42;color:#ffffff;padding:24px 28px">
-        <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#a8dfce">Scube learning portal</div>
+        <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#a8dfce">S Cube Employee Portal</div>
         <div style="font-size:22px;font-weight:bold;margin-top:8px">Your sign-in code</div>
       </div>
       <div style="padding:24px 28px;color:#18212b;font-size:15px;line-height:1.6">
