@@ -1,0 +1,51 @@
+# Render blueprint for TEST deployments (free plan). Production runs on Google Cloud Run (see README.md).
+# Every git push to main rebuilds and redeploys this service.
+# Free plan limits: the service sleeps after 15 min idle (first visit then takes ~1 min), and the disk is
+# wiped on every deploy, so videos uploaded without GCS_BUCKET disappear after each push.
+services:
+  - type: web
+    name: scube-portal
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    autoDeploy: true
+    # --include=dev: the React build tools are dev dependencies, and NODE_ENV=production would skip them.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: ALLOWED_DOMAIN
+        value: scube-ergo.com
+      - key: ADMIN_EMAILS
+        value: raghu@scube-ergo.com
+      - key: TIMEZONE
+        value: Asia/Kolkata
+      - key: ALL_EMPLOYEES_EMAIL
+        value: team@scube-ergo.com
+      # Test mode: daily wishes only go here.
+      - key: TEST_RECIPIENT
+        value: raghu@scube-ergo.com
+      - key: TEST_EMAIL_RECIPIENTS
+        value: raghu@scube-ergo.com,sneha@scube-ergo.com
+      - key: MAIL_FROM
+        value: Scube Celebrations <raghu@scube-ergo.com>
+      # Filled in on the Render dashboard when the blueprint is created (never committed):
+      - key: DATABASE_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: PORTAL_URL
+        sync: false

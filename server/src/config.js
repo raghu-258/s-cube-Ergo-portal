@@ -62,10 +62,13 @@ if (production) {
   if (!config.googleClientId && !config.otpLogin) missing.push('GOOGLE_CLIENT_ID, or email settings (GMAIL_* or SMTP_*) for sign-in codes');
   if (config.sessionSecret.length < 32) missing.push('SESSION_SECRET (at least 32 characters)');
   if (config.databaseUrl === 'memory') missing.push('DATABASE_URL');
-  if (!config.bucket) missing.push('GCS_BUCKET');
 }
 if (missing.length) {
   throw new Error(`Missing settings for production: ${missing.join(', ')}`);
+}
+if (production && !config.bucket) {
+  // Allowed for test deployments (e.g. Render free): videos go to the server's own disk and are lost on redeploy.
+  console.warn('GCS_BUCKET is not set: course videos are stored on local disk and will be lost when the server restarts.');
 }
 if (!config.sessionSecret) {
   // Fine for local development: sessions just end when the server restarts.
